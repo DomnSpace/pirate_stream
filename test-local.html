@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Stream Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #111; color: #fff; }
+        .container { max-width: 600px; margin: 0 auto; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+        input { padding: 10px; width: 300px; margin: 10px; }
+        .status { padding: 10px; margin: 10px; border-radius: 5px; }
+        .success { background: #4CAF50; }
+        .error { background: #f44336; }
+        .info { background: #2196F3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Pirate Radio Stream Test</h1>
+        <p>Use this page to test your local stream before deploying to GitHub Pages.</p>
+        
+        <div>
+            <label>Stream URL:</label><br>
+            <input type="text" id="streamUrl" value="http://localhost:8000/stream" style="width: 400px;">
+        </div>
+        
+        <div>
+            <button onclick="testStream()">Test Stream</button>
+            <button onclick="playStream()">Play Stream</button>
+            <button onclick="stopStream()">Stop Stream</button>
+        </div>
+        
+        <div id="status" class="status info">Ready to test</div>
+        
+        <audio id="audio" controls style="width: 100%; margin: 20px 0;"></audio>
+        
+        <h3>Test Results:</h3>
+        <div id="results"></div>
+        
+        <h3>Stream Information:</h3>
+        <div id="streamInfo"></div>
+    </div>
+
+    <script>
+        const audio = document.getElementById('audio');
+        const status = document.getElementById('status');
+        const results = document.getElementById('results');
+        const streamInfo = document.getElementById('streamInfo');
+        
+        function updateStatus(message, type = 'info') {
+            status.className = `status ${type}`;
+            status.textContent = message;
+        }
+        
+        function addResult(test, result, success) {
+            results.innerHTML += `
+                <div style="margin: 10px 0; padding: 10px; background: ${success ? '#4CAF50' : '#f44336'}; border-radius: 5px;">
+                    <strong>${test}:</strong> ${result}
+                </div>
+            `;
+        }
+        
+        async function testStream() {
+            const url = document.getElementById('streamUrl').value;
+            results.innerHTML = '';
+            updateStatus('Testing stream...', 'info');
+            
+            // Test 1: Basic URL validation
+            try {
+                new URL(url);
+                addResult('URL Format', 'Valid URL format', true);
+            } catch (e) {
+                addResult('URL Format', 'Invalid URL format', false);
+                updateStatus('Invalid URL format', 'error');
+                return;
+            }
+            
+            // Test 2: Server reachability
+            try {
+                const response = await fetch(url.replace('/stream', '/'), { method: 'HEAD' });
+                addResult('Server Reachable', `Server responded with status ${response.status}`, response.ok);
+            } catch (e) {
+                addResult('Server Reachable', `Cannot reach server: ${e.message}`, false);
+            }
+            
+            // Test 3: Stream endpoint
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                addResult('Stream Endpoint', `Stream endpoint status: ${response.status}`, response.ok);
+            } catch (e) {
+                addResult('Stream Endpoint', `Stream endpoint error: ${e.message}`, false);
+            }
+            
+            // Test 4: CORS headers
+            try {
+                const response = await fetch(url.replace('/stream', '/status-json.xsl'));
+                addResult('CORS Headers', 'CORS headers are properly configured', true);
+                
+                // Get stream info
+                const data = await response.json();
+                if (data.icestats) {
+                    let info = '<h4>Icecast Server Info:</h4>';
+                    info += `<p><strong>Server:</strong> ${data.icestats.server_id || 'Unknown'}</p>`;
+                    info += `<p><strong>Admin:</strong> ${data.icestats.admin || 'Not set'}</p>`;
+                    info += `<p><strong>Host:</strong> ${data.icestats.host || 'Unknown'}</p>`;
+                    
+                    if (data.icestats.source) {
+                        let source = data.icestats.source;
+                        if (Array.isArray(source)) source = source[0];
+                        
+                        info += '<h4>Stream Info:</h4>';
+                        info += `<p><strong>Mount:</strong> ${source.mount || 'Unknown'}</p>`;
+                        info += `<p><strong>Bitrate:</strong> ${source.bitrate || 'Unknown'} kbps</p>`;
+                        info += `<p><strong>Listeners:</strong> ${source.listeners || 0}</p>`;
+                        info += `<p><strong>Current Track:</strong> ${source.title || 'Unknown'}</p>`;
+                    }
+                    
+                    streamInfo.innerHTML = info;
+                }
+            } catch (e) {
+                addResult('CORS Headers', `CORS test failed: ${e.message}`, false);
+            }
+            
+            updateStatus('Testing complete! Check results above.', 'success');
+        }
+        
+        function playStream() {
+            const url = document.getElementById('streamUrl').value;
+            audio.src = url;
+            audio.play().then(() => {
+                updateStatus('Playing stream', 'success');
+            }).catch(e => {
+                updateStatus(`Playback failed: ${e.message}`, 'error');
+            });
+        }
+        
+        function stopStream() {
+            audio.pause();
+            audio.src = '';
+            updateStatus('Stream stopped', 'info');
+        }
+    </script>
+</body>
+</html>

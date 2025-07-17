@@ -1,0 +1,40 @@
+# Logs and runtime files
+*.log
+*.pid
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Music files (optional - remove this line if you want to include sample music)
+music/*.mp3
+music/*.wav
+music/*.flac
+music/*.ogg
+
+# Docker volumes and cache
+.docker/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

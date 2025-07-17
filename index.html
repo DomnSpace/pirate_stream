@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🚢 Pirate Radio 24/7 📻</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    :root {
+      --bg:#050505;
+      --accent:#0ff;
+      --text:#eee;
+      --accent2:#f0f;
+      --error:#ff6b6b;
+    }
+    *{box-sizing:border-box;}
+    html,body{
+      height:100%;
+      margin:0;
+      font-family:'Press Start 2P', monospace;
+      color:var(--text);
+      background: radial-gradient(circle at center, #111 0%, #050505 100%);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:1rem;
+    }
+    h1{
+      font-size:2rem;
+      margin:0 0 1rem 0;
+      text-shadow:0 0 5px var(--accent),0 0 10px var(--accent2);
+      animation: flicker 2s infinite;
+    }
+    @keyframes flicker{
+      0%, 19%, 21%, 23%, 25%, 54%, 56%, 100%{ opacity:1; }
+      20%,24%,55%{ opacity:0.4; }
+    }
+    .connection-panel{
+      background:rgba(17,17,17,0.8);
+      border:2px solid var(--accent);
+      border-radius:10px;
+      padding:1.5rem;
+      margin-bottom:1rem;
+      width:100%;
+      max-width:400px;
+    }
+    input{
+      background:rgba(0,0,0,0.5);
+      border:1px solid var(--accent);
+      color:var(--text);
+      padding:0.5rem;
+      border-radius:5px;
+      width:100%;
+      margin:0.5rem 0;
+      font-family:'Press Start 2P', monospace;
+      font-size:0.7rem;
+    }
+    input:focus{
+      outline:none;
+      box-shadow:0 0 5px var(--accent);
+    }
+    .status{
+      font-size:0.7rem;
+      margin:0.5rem 0;
+      padding:0.5rem;
+      border-radius:5px;
+    }
+    .status.connected{
+      background:rgba(75,181,67,0.3);
+      border:1px solid #4bb543;
+    }
+    .status.error{
+      background:rgba(255,107,107,0.3);
+      border:1px solid var(--error);
+    }
+    .status.connecting{
+      background:rgba(255,193,7,0.3);
+      border:1px solid #ffc107;
+    }
+    #cover{
+      width:220px;
+      height:220px;
+      border-radius:10px;
+      box-shadow:0 0 15px var(--accent2),0 0 30px var(--accent);
+      margin-bottom:1rem;
+      object-fit:cover;
+      background:#222;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#666;
+      font-size:0.7rem;
+    }
+    .controls{
+      display:flex;
+      gap:1rem;
+      margin:1rem 0;
+      flex-wrap:wrap;
+      justify-content:center;
+    }
+    button{
+      background:none;
+      border:2px solid var(--accent);
+      color:var(--accent);
+      padding:0.8rem 2rem;
+      font-size:0.8rem;
+      border-radius:8px;
+      cursor:pointer;
+      transition:all 0.3s ease;
+      font-family:'Press Start 2P', monospace;
+    }
+    button:hover:not(:disabled){
+      background:var(--accent);
+      color:#000;
+      box-shadow:0 0 10px var(--accent);
+    }
+    button:disabled{
+      opacity:0.5;
+      cursor:not-allowed;
+    }
+    .volume-control{
+      display:flex;
+      align-items:center;
+      gap:0.5rem;
+      margin:1rem 0;
+    }
+    input[type="range"]{
+      width:200px;
+    }
+    .metadata{
+      margin:1rem 0;
+      font-size:0.7rem;
+      line-height:1.5;
+      max-width:400px;
+    }
+    footer{
+      margin-top:auto;
+      padding:1rem 0;
+      font-size:0.6rem;
+      opacity:0.7;
+    }
+    a{color:var(--accent2);}
+    @media (max-width: 600px){
+      h1{font-size:1.5rem;}
+      .connection-panel{padding:1rem;}
+      button{padding:0.6rem 1.5rem;font-size:0.7rem;}
+    }
+  </style>
+</head>
+<body>
+  <h1>🚢 Pirate Radio 24/7 📻</h1>
+  
+  <div class="connection-panel">
+    <label for="serverUrl">Local Stream URL:</label>
+    <input type="text" id="serverUrl" placeholder="http://localhost:8000/stream" value="http://localhost:8000/stream">
+    <div id="status" class="status">Enter your local stream URL above</div>
+  </div>
+
+  <div id="cover">🎵 No Cover Art</div>
+  
+  <div class="controls">
+    <button id="connectBtn">Connect</button>
+    <button id="playBtn" disabled>▶︎ Play</button>
+    <button id="stopBtn" disabled>⏸︎ Stop</button>
+  </div>
+
+  <div class="volume-control">
+    <span>🔊</span>
+    <input type="range" id="volumeSlider" min="0" max="100" value="50">
+    <span id="volumeDisplay">50%</span>
+  </div>
+
+  <div id="metadata" class="metadata"></div>
+
+  <audio id="radio" preload="none" crossorigin="anonymous"></audio>
+
+  <footer>
+    Streaming from the high seas 🏴‍☠️<br>
+    Built with ❤️ for GitHub Pages | <a href="https://github.com/your-username/pirate-stream" target="_blank">Source Code</a>
+  </footer>
+
+  <script>
+    class PirateRadio {
+      constructor() {
+        this.audio = document.getElementById('radio');
+        this.connectBtn = document.getElementById('connectBtn');
+        this.playBtn = document.getElementById('playBtn');
+        this.stopBtn = document.getElementById('stopBtn');
+        this.serverUrl = document.getElementById('serverUrl');
+        this.status = document.getElementById('status');
+        this.volumeSlider = document.getElementById('volumeSlider');
+        this.volumeDisplay = document.getElementById('volumeDisplay');
+        this.cover = document.getElementById('cover');
+        this.metadata = document.getElementById('metadata');
+        
+        this.isConnected = false;
+        this.metadataInterval = null;
+        
+        this.initEventListeners();
+        this.loadSettings();
+      }
+
+      initEventListeners() {
+        this.connectBtn.addEventListener('click', () => this.connect());
+        this.playBtn.addEventListener('click', () => this.togglePlay());
+        this.stopBtn.addEventListener('click', () => this.stop());
+        
+        this.volumeSlider.addEventListener('input', (e) => {
+          const volume = e.target.value;
+          this.audio.volume = volume / 100;
+          this.volumeDisplay.textContent = volume + '%';
+          this.saveSettings();
+        });
+
+        this.serverUrl.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') this.connect();
+        });
+
+        this.audio.addEventListener('loadstart', () => this.updateStatus('Connecting...', 'connecting'));
+        this.audio.addEventListener('canplay', () => this.onConnected());
+        this.audio.addEventListener('error', (e) => this.onError(e));
+        this.audio.addEventListener('ended', () => this.onDisconnected());
+      }
+
+      connect() {
+        const url = this.serverUrl.value.trim();
+        if (!url) {
+          this.updateStatus('Please enter a stream URL', 'error');
+          return;
+        }
+
+        this.updateStatus('Connecting...', 'connecting');
+        this.audio.src = url;
+        this.audio.load();
+      }
+
+      onConnected() {
+        this.isConnected = true;
+        this.updateStatus('Connected! Ready to play.', 'connected');
+        this.playBtn.disabled = false;
+        this.connectBtn.textContent = 'Reconnect';
+        this.saveSettings();
+        this.startMetadataPolling();
+      }
+
+      onError(e) {
+        this.isConnected = false;
+        this.updateStatus('Connection failed. Check URL and ensure CORS is enabled.', 'error');
+        this.playBtn.disabled = true;
+        this.stopBtn.disabled = true;
+        this.connectBtn.textContent = 'Connect';
+        this.stopMetadataPolling();
+      }
+
+      onDisconnected() {
+        this.isConnected = false;
+        this.updateStatus('Disconnected', 'error');
+        this.playBtn.disabled = true;
+        this.stopBtn.disabled = true;
+        this.playBtn.textContent = '▶︎ Play';
+        this.stopMetadataPolling();
+      }
+
+      togglePlay() {
+        if (this.audio.paused) {
+          this.audio.play().then(() => {
+            this.playBtn.textContent = '⏸︎ Pause';
+            this.stopBtn.disabled = false;
+            this.updateStatus('Playing...', 'connected');
+          }).catch(e => {
+            this.updateStatus('Playback failed: ' + e.message, 'error');
+          });
+        } else {
+          this.audio.pause();
+          this.playBtn.textContent = '▶︎ Play';
+          this.updateStatus('Paused', 'connecting');
+        }
+      }
+
+      stop() {
+        this.audio.pause();
+        this.audio.currentTime = 0;
+        this.playBtn.textContent = '▶︎ Play';
+        this.stopBtn.disabled = true;
+        this.updateStatus('Stopped', 'connecting');
+      }
+
+      updateStatus(message, type) {
+        this.status.textContent = message;
+        this.status.className = `status ${type}`;
+      }
+
+      startMetadataPolling() {
+        if (this.metadataInterval) clearInterval(this.metadataInterval);
+        
+        this.metadataInterval = setInterval(() => {
+          this.fetchMetadata();
+        }, 5000);
+        
+        // Fetch immediately
+        this.fetchMetadata();
+      }
+
+      stopMetadataPolling() {
+        if (this.metadataInterval) {
+          clearInterval(this.metadataInterval);
+          this.metadataInterval = null;
+        }
+        this.metadata.innerHTML = '';
+        this.cover.innerHTML = '🎵 No Cover Art';
+      }
+
+      async fetchMetadata() {
+        try {
+          const baseUrl = this.serverUrl.value.replace('/stream', '');
+          const response = await fetch(`${baseUrl}/status-json.xsl`);
+          const data = await response.json();
+          
+          if (data.icestats && data.icestats.source) {
+            let source = data.icestats.source;
+            if (Array.isArray(source)) {
+              source = source.find(s => s.listenurl && s.listenurl.includes('/stream')) || source[0];
+            }
+            
+            const title = source.title || 'Unknown Track';
+            const listeners = source.listeners || 0;
+            const bitrate = source.bitrate || 'Unknown';
+            
+            this.metadata.innerHTML = `
+              <strong>Now Playing:</strong><br>
+              ${title}<br><br>
+              <strong>Listeners:</strong> ${listeners}<br>
+              <strong>Bitrate:</strong> ${bitrate} kbps
+            `;
+            
+            // You could also fetch cover art here if your server provides it
+            this.cover.innerHTML = '🎵 ' + (title.length > 20 ? title.substring(0, 20) + '...' : title);
+          }
+        } catch (error) {
+          console.log('Metadata fetch failed:', error);
+          // Don't show error to user, just silently fail
+        }
+      }
+
+      saveSettings() {
+        localStorage.setItem('pirateRadio', JSON.stringify({
+          serverUrl: this.serverUrl.value,
+          volume: this.volumeSlider.value
+        }));
+      }
+
+      loadSettings() {
+        try {
+          const settings = JSON.parse(localStorage.getItem('pirateRadio') || '{}');
+          if (settings.serverUrl) {
+            this.serverUrl.value = settings.serverUrl;
+          }
+          if (settings.volume) {
+            this.volumeSlider.value = settings.volume;
+            this.audio.volume = settings.volume / 100;
+            this.volumeDisplay.textContent = settings.volume + '%';
+          }
+        } catch (e) {
+          console.log('Failed to load settings:', e);
+        }
+      }
+    }
+
+    // Initialize the radio when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      new PirateRadio();
+    });
+  </script>
+</body>
+</html>

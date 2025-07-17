@@ -1,0 +1,25 @@
+# docker-compose.yml  (in C:\Users\Dominik\pirate-stream)
+services:
+  icecast:
+    image: moul/icecast:latest
+    container_name: icecast
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./icecast.xml:/etc/icecast.xml:ro
+
+  liquidsoap:
+    image: savonet/liquidsoap:v2.3.3-minimal     # ← valid tag
+    container_name: liquidsoap
+    depends_on: [icecast]
+    volumes:
+      - ./music:/music:ro
+    command: >
+      -e "radio = playlist(mode='random','/music');
+          output.icecast(%mp3(bitrate=128),
+            host='icecast', port=8000,
+            password='hackme-source',
+            mount='/stream',
+            name='Pirate Radio',
+            genre='Chiptune',
+            radio)"
