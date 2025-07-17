@@ -49,10 +49,11 @@ Your site will be available at: `https://YOUR_USERNAME.github.io/pirate-stream/`
 3. Share your GitHub Pages URL with listeners
 
 ### For Listeners:
-1. Visit your GitHub Pages URL
-2. Enter the stream URL: `http://YOUR_IP:PORT/stream`
-   - Example: `http://192.168.1.100:8000/stream`
-3. Click "Connect" then "Play"
+1. Visit your GitHub Pages URL: `https://domnspace.github.io/pirate_stream/`
+2. The page will auto-suggest your local IP
+3. Click "🔍 Auto-Detect IP" or manually enter: `http://10.151.253.116:8000/stream`
+4. Click "Connect" then "Play"
+5. Enjoy your music! 🎵
 
 ## 🔧 Configuration
 
@@ -92,12 +93,30 @@ Edit the CSS variables in `index.html`:
 - Update the footer links
 - Modify the page title in `<title>`
 
-## 🌐 Network Access
+## 🌐 Network Access & Security
 
-For external access, you'll need to:
-1. Use your public IP address instead of localhost
-2. Configure port forwarding on your router
-3. Ensure Windows Firewall allows the connection
+### Safe Local Network Streaming (Recommended)
+Your stream will be accessible to devices on your local network (like phones, laptops) without exposing it to the internet:
+
+1. **Use Local IP**: Your computer's IP is `10.151.253.116`
+2. **URL Format**: `http://10.151.253.116:8000/stream`
+3. **Who Can Access**: Only devices connected to your WiFi/network
+4. **Security**: Safe - not exposed to the internet
+
+### For Internet Access (Advanced Users Only)
+⚠️ **Only do this if you understand the security implications:**
+
+1. **Port Forwarding**: Configure your router to forward port 8000
+2. **Firewall**: Allow Icecast through Windows Firewall
+3. **Dynamic DNS**: Use a service like No-IP or DuckDNS
+4. **Security**: Change default passwords in `icecast.xml`
+
+### Security Best Practices
+- ✅ Keep default setup for local network only
+- ✅ Use strong passwords if exposing to internet
+- ✅ Monitor listener connections
+- ❌ Don't share copyrighted music publicly
+- ❌ Don't use default passwords for internet streams
 
 ## 📱 Features
 
