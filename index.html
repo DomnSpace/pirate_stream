@@ -154,7 +154,7 @@
   
   <div class="connection-panel">
     <label for="serverUrl">Local Stream URL:</label>
-    <input type="text" id="serverUrl" placeholder="http://10.151.253.116:8000/stream" value="http://10.151.253.116:8000/stream">
+    <input type="text" id="serverUrl" placeholder="http://10.151.253.116:8001/stream" value="http://10.151.253.116:8001/stream">
     <button onclick="detectLocalIP()" style="margin-top: 0.5rem; padding: 0.3rem 1rem; font-size: 0.6rem;">🔍 Auto-Detect IP</button>
     <div id="status" class="status">Enter your local stream URL above</div>
   </div>
@@ -395,7 +395,7 @@
         if (match) {
           const localIP = match[1];
           if (localIP !== '127.0.0.1' && !localIP.startsWith('169.254')) {
-            serverUrl.value = `http://${localIP}:8000/stream`;
+            serverUrl.value = `http://${localIP}:8001/stream`;
             status.textContent = `Auto-detected IP: ${localIP}`;
             status.className = 'status connected';
             pc.close();
