@@ -154,7 +154,8 @@
   
   <div class="connection-panel">
     <label for="serverUrl">Local Stream URL:</label>
-    <input type="text" id="serverUrl" placeholder="http://localhost:8000/stream" value="http://localhost:8000/stream">
+    <input type="text" id="serverUrl" placeholder="http://10.151.253.116:8000/stream" value="http://10.151.253.116:8000/stream">
+    <button onclick="detectLocalIP()" style="margin-top: 0.5rem; padding: 0.3rem 1rem; font-size: 0.6rem;">🔍 Auto-Detect IP</button>
     <div id="status" class="status">Enter your local stream URL above</div>
   </div>
 
@@ -372,6 +373,44 @@
     document.addEventListener('DOMContentLoaded', () => {
       new PirateRadio();
     });
+
+    // Auto-detect local IP function
+    function detectLocalIP() {
+      const status = document.getElementById('status');
+      const serverUrl = document.getElementById('serverUrl');
+      
+      // Create a temporary connection to detect local IP
+      const pc = new RTCPeerConnection({iceServers: []});
+      pc.createDataChannel('');
+      
+      pc.createOffer().then(offer => pc.setLocalDescription(offer));
+      
+      pc.onicecandidate = (ice) => {
+        if (!ice || !ice.candidate || !ice.candidate.candidate) return;
+        
+        const candidate = ice.candidate.candidate;
+        const regex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
+        const match = candidate.match(regex);
+        
+        if (match) {
+          const localIP = match[1];
+          if (localIP !== '127.0.0.1' && !localIP.startsWith('169.254')) {
+            serverUrl.value = `http://${localIP}:8000/stream`;
+            status.textContent = `Auto-detected IP: ${localIP}`;
+            status.className = 'status connected';
+            pc.close();
+          }
+        }
+      };
+      
+      setTimeout(() => {
+        pc.close();
+        if (serverUrl.value.includes('localhost')) {
+          status.textContent = 'Auto-detection failed. Use manual IP.';
+          status.className = 'status error';
+        }
+      }, 2000);
+    }
   </script>
 </body>
 </html>
