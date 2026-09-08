@@ -6,11 +6,12 @@
 <meta name="theme-color" content="#05080b">
 <title>Pirate Radio — Signal Lab</title>
 <link rel="stylesheet" href="signal-lab.css">
+<link rel="stylesheet" href="signal-lab-measured.css">
 </head>
 <body>
 <div id="app">
   <header>
-    <div class="brand"><h1>🏴‍☠️ PIRATE RADIO / SIGNAL LAB</h1><div class="sub">mother-track pointer instrument · phone-first</div></div>
+    <div class="brand"><h1>🏴‍☠️ PIRATE RADIO / SIGNAL LAB</h1><div class="sub">mother-track pointer instrument · measure first, name later</div></div>
     <a class="back" href="index.html">RADIO</a>
   </header>
 
@@ -18,12 +19,12 @@
     <div class="filebox">
       <label for="fileInput">LOAD LOCAL AUDIO</label>
       <input id="fileInput" type="file" accept="audio/*,.m4a,.mp3,.wav,.ogg,.flac">
-      <button id="resumeBtn" title="Resume audio">AUDIO</button>
+      <button id="resumeBtn">AUDIO</button>
     </div>
     <div id="fileName">No source loaded. Files stay on this device.</div>
     <div class="stats">
-      <div class="stat"><b>BPM</b><span id="bpmRead">174.00</span></div>
-      <div class="stat"><b>SNAP</b><span id="snapRead">BEAT</span></div>
+      <div class="stat"><b>BPM GRID</b><input id="bpmInput" class="tiny-input" type="number" min="40" max="300" step=".01" value="174"></div>
+      <div class="stat"><b>SNAP</b><span id="snapRead">FREE</span></div>
       <div class="stat"><b>VIEW</b><span id="viewRead">RAW</span></div>
       <div class="stat"><b>POINTERS</b><span id="pointerCount">0</span></div>
     </div>
@@ -37,7 +38,7 @@
     <div id="waveWrap" class="wave-wrap">
       <canvas id="wave"></canvas>
       <canvas id="overlay"></canvas>
-      <div class="hint">A/B handles are fat on purpose.</div>
+      <div class="hint">A/B are source coordinates, not chopped files.</div>
     </div>
   </section>
 
@@ -47,13 +48,13 @@
       <button id="aBtn" disabled>SET A</button>
       <button id="bBtn" disabled>SET B</button>
       <button id="loopBtn" disabled>LOOP</button>
-      <button id="commitBtn" class="gold" disabled>SAVE</button>
+      <button id="measureBtn" class="gold" disabled>MEASURE</button>
     </div>
     <div class="row" style="margin-top:6px">
-      <button id="prevBeat" disabled>◀ BEAT</button>
+      <button id="prevBeat" disabled>◀ GRID</button>
       <button id="zoomOut" disabled>− ZOOM</button>
       <button id="zoomIn" disabled>+ ZOOM</button>
-      <button id="nextBeat" disabled>BEAT ▶</button>
+      <button id="nextBeat" disabled>GRID ▶</button>
     </div>
   </section>
 
@@ -65,20 +66,40 @@
       <button class="mode" data-view="tail">TAIL</button>
       <button class="mode" data-view="grain">GRAIN</button>
     </div>
-    <div class="sub" style="margin:8px 0 5px">SNAP</div>
+    <div class="sub" style="margin:8px 0 5px">SNAP — OFF UNTIL THE GRID IS TRUSTED</div>
     <div class="modes" id="snapModes">
-      <button class="mode" data-snap="free">FREE</button>
-      <button class="mode active" data-snap="beat">BEAT</button>
+      <button class="mode active" data-snap="free">FREE</button>
+      <button class="mode" data-snap="beat">BEAT</button>
       <button class="mode" data-snap="16th">1/16</button>
       <button class="mode" data-snap="transient">TRANSIENT</button>
     </div>
   </section>
 
   <section class="panel">
-    <div class="sub" style="margin-bottom:5px">ROLE TAGS</div>
-    <div class="chips" id="roleTags"></div>
-    <div class="sub" style="margin:8px 0 5px">MATERIAL / SCALE</div>
-    <div class="chips" id="materialTags"></div>
+    <div class="measure-head">
+      <div><div class="pointer-title">SELECTION MEASUREMENTS</div><div class="sub">physical descriptors; no semantic classification</div></div>
+      <div id="measureStatus" class="measure-status">not measured</div>
+    </div>
+    <div class="measure-grid">
+      <div class="measure"><b>DURATION</b><span id="mDuration">—</span></div>
+      <div class="measure"><b>GRID PHASE</b><span id="mPhase">—</span></div>
+      <div class="measure"><b>RMS</b><span id="mRms">—</span></div>
+      <div class="measure"><b>PEAK</b><span id="mPeak">—</span></div>
+      <div class="measure"><b>CREST</b><span id="mCrest">—</span></div>
+      <div class="measure"><b>ONSETS/s</b><span id="mOnsets">—</span></div>
+      <div class="measure"><b>CENTROID</b><span id="mCentroid">—</span></div>
+      <div class="measure"><b>FLATNESS</b><span id="mFlatness">—</span></div>
+      <div class="measure"><b>LOW &lt;180</b><span id="mLow">—</span></div>
+      <div class="measure"><b>MID 180–2k</b><span id="mMid">—</span></div>
+      <div class="measure"><b>HIGH &gt;2k</b><span id="mHigh">—</span></div>
+      <div class="measure"><b>STEREO WIDTH</b><span id="mWidth">—</span></div>
+      <div class="measure wide"><b>PITCH-CLASS ENERGY</b><span id="mChroma">—</span></div>
+      <div class="measure"><b>CHROMA ENTROPY</b><span id="mEntropy">—</span></div>
+      <div class="measure"><b>NEAREST SAVED</b><span id="mNearest">—</span></div>
+    </div>
+    <label class="note-label" for="noteInput">OPTIONAL EAR NOTE</label>
+    <textarea id="noteInput" rows="2" placeholder="e.g. 'same little metallic answer as ~1:28' — no ontology required"></textarea>
+    <button id="commitBtn" class="gold full" disabled>SAVE MEASURED POINTER</button>
   </section>
 
   <section class="panel">
@@ -94,8 +115,8 @@
     </div>
   </section>
 
-  <div class="footerline">Nothing is chopped destructively. Saved objects are pointers into the mother track.</div>
+  <div class="footerline">First build the measurement space. Names can emerge from recurrence and listening later.</div>
 </div>
-<script src="signal-lab.js"></script>
+<script src="signal-lab-measured.js"></script>
 </body>
 </html>
