@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#05080b">
+<title>Pirate Radio — Signal Lab</title>
+<link rel="stylesheet" href="signal-lab.css">
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><h1>🏴‍☠️ PIRATE RADIO / SIGNAL LAB</h1><div class="sub">mother-track pointer instrument · phone-first</div></div>
+    <a class="back" href="index.html">RADIO</a>
+  </header>
+
+  <section class="panel">
+    <div class="filebox">
+      <label for="fileInput">LOAD LOCAL AUDIO</label>
+      <input id="fileInput" type="file" accept="audio/*,.m4a,.mp3,.wav,.ogg,.flac">
+      <button id="resumeBtn" title="Resume audio">AUDIO</button>
+    </div>
+    <div id="fileName">No source loaded. Files stay on this device.</div>
+    <div class="stats">
+      <div class="stat"><b>BPM</b><span id="bpmRead">174.00</span></div>
+      <div class="stat"><b>SNAP</b><span id="snapRead">BEAT</span></div>
+      <div class="stat"><b>VIEW</b><span id="viewRead">RAW</span></div>
+      <div class="stat"><b>POINTERS</b><span id="pointerCount">0</span></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="pointer-info">
+      <div><div id="pointerTitle" class="pointer-title">SOURCE</div><div id="pointerMeta" class="pointer-meta">tap = playhead · drag handles = trim · drag selection = move · pinch = zoom</div></div>
+      <div id="timeRead" class="time">00:00.000</div>
+    </div>
+    <div id="waveWrap" class="wave-wrap">
+      <canvas id="wave"></canvas>
+      <canvas id="overlay"></canvas>
+      <div class="hint">A/B handles are fat on purpose.</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="transport">
+      <button id="playBtn" class="primary" disabled>▶ PLAY</button>
+      <button id="aBtn" disabled>SET A</button>
+      <button id="bBtn" disabled>SET B</button>
+      <button id="loopBtn" disabled>LOOP</button>
+      <button id="commitBtn" class="gold" disabled>SAVE</button>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button id="prevBeat" disabled>◀ BEAT</button>
+      <button id="zoomOut" disabled>− ZOOM</button>
+      <button id="zoomIn" disabled>+ ZOOM</button>
+      <button id="nextBeat" disabled>BEAT ▶</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="sub" style="margin-bottom:5px">SOURCE VIEW</div>
+    <div class="modes" id="viewModes">
+      <button class="mode active" data-view="raw">RAW</button>
+      <button class="mode" data-view="attack">ATTACK</button>
+      <button class="mode" data-view="tail">TAIL</button>
+      <button class="mode" data-view="grain">GRAIN</button>
+    </div>
+    <div class="sub" style="margin:8px 0 5px">SNAP</div>
+    <div class="modes" id="snapModes">
+      <button class="mode" data-snap="free">FREE</button>
+      <button class="mode active" data-snap="beat">BEAT</button>
+      <button class="mode" data-snap="16th">1/16</button>
+      <button class="mode" data-snap="transient">TRANSIENT</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="sub" style="margin-bottom:5px">ROLE TAGS</div>
+    <div class="chips" id="roleTags"></div>
+    <div class="sub" style="margin:8px 0 5px">MATERIAL / SCALE</div>
+    <div class="chips" id="materialTags"></div>
+  </section>
+
+  <section class="panel">
+    <div class="controls2">
+      <button id="prevPointer">◀ POINTER</button>
+      <button id="auditionPointer">◎ AUDITION</button>
+      <button id="nextPointer">POINTER ▶</button>
+    </div>
+    <div id="pointerList" style="margin-top:7px"></div>
+    <div class="row" style="margin-top:7px">
+      <button id="exportBtn">EXPORT JSON</button>
+      <button id="clearBtn" class="danger">CLEAR MAP</button>
+    </div>
+  </section>
+
+  <div class="footerline">Nothing is chopped destructively. Saved objects are pointers into the mother track.</div>
+</div>
+<script src="signal-lab.js"></script>
+</body>
+</html>
