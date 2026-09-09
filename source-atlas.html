@@ -1,23 +1,84 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#05080b"><title>Pirate Radio — Source Atlas</title>
-<style>
-:root{--bg:#05080b;--p:#0b1318;--line:#263740;--text:#e9f0f1;--muted:#82959b;--cyan:#77e6eb;--gold:#e6c96c;--rose:#e27882}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;background:var(--bg);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}body{padding:max(8px,env(safe-area-inset-top)) 8px max(16px,env(safe-area-inset-bottom));overscroll-behavior:none}.app{max-width:820px;margin:auto;display:grid;gap:8px}.panel{background:linear-gradient(#0d171d,#091116);border:1px solid var(--line);border-radius:12px;padding:8px}h1{font-size:15px;margin:0;color:var(--cyan);letter-spacing:.04em}.sub{font-size:9px;color:var(--muted);margin-top:3px}.top{display:flex;align-items:center;gap:8px}.top a{margin-left:auto;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:8px}.files{display:grid;grid-template-columns:1fr 1fr;gap:6px}.files label{min-height:48px;border:1px dashed var(--cyan);border-radius:10px;color:var(--cyan);display:grid;place-items:center;font-weight:700;text-align:center;padding:6px}input{display:none}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px}.s{padding:5px;border:1px solid #1d2c32;border-radius:7px;background:#071014}.s b{display:block;font-size:7px;color:var(--muted)}.s span{font-size:10px}.canvasbox{position:relative;width:100%;border:1px solid #203038;border-radius:10px;background:#030709;overflow:hidden;touch-action:none}.canvasbox canvas{position:absolute;inset:0;width:100%;height:100%}#timeline{height:290px}#matrix{aspect-ratio:1/1}.read{font-size:10px;line-height:1.5;color:#c8d4d6}.read strong{color:var(--gold)}.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:7px}.controls button,.pulse button,.pair button{min-height:46px;border:1px solid var(--line);border-radius:10px;background:#0d171d;color:var(--text);font:inherit;font-weight:700}.controls button.primary{color:var(--cyan);border-color:var(--cyan)}.controls button.gold{color:var(--gold);border-color:var(--gold)}.pulse{display:flex;gap:5px;overflow:auto}.pulse button{flex:0 0 auto;min-height:40px;font-size:9px}.pairs{display:grid;gap:4px;max-height:260px;overflow:auto}.pair{display:grid;grid-template-columns:1fr auto;gap:6px;border:1px solid #1e3037;border-radius:8px;padding:7px;background:#071014}.pair strong{font-size:9px}.pair small{display:block;color:var(--muted);font-size:8px;margin-top:2px}.pair button{min-height:38px;color:var(--cyan)}.footer{text-align:center;color:var(--muted);font-size:8px;padding:5px}.warn{color:var(--rose)}
-</style></head><body><div class="app">
-<section class="panel top"><div><h1>🏴‍☠️ PIRATE RADIO / SOURCE ATLAS</h1><div class="sub">measurement field · recurrence map · names come later</div></div><a href="signal-lab.html">LAB</a></section>
-<section class="panel"><div class="files"><label>LOAD ATLAS JSON<input id="atlasFile" type="file" accept="application/json,.json"></label><label>LOAD LOCAL AUDIO<input id="audioFile" type="file" accept="audio/*,.m4a,.wav,.mp3,.ogg"></label></div><div class="sub" id="status">Load an atlas JSON. Audio is optional and stays local.</div><div class="stats"><div class="s"><b>DURATION</b><span id="dur">—</span></div><div class="s"><b>SELECT</b><span id="selTime">—</span></div><div class="s"><b>RMS</b><span id="selRms">—</span></div><div class="s"><b>CENTROID</b><span id="selCent">—</span></div></div></section>
-<section class="panel"><div class="sub">GLOBAL PULSE CANDIDATES · hypotheses only</div><div class="pulse" id="pulse"></div></section>
-<section class="panel"><div class="canvasbox" id="timeline"><canvas id="tc"></canvas></div><div class="read" id="read">Tap the atlas after loading a JSON.</div><div class="controls"><button id="play" class="primary">▶ REGION</button><button id="prev">◀ 4s</button><button id="next">4s ▶</button></div></section>
-<section class="panel"><div class="sub">CELL SELF-SIMILARITY · tap a square to compare regions</div><div class="canvasbox" id="matrix"><canvas id="mc"></canvas></div><div class="read" id="pairRead">A/B recurrence audition appears here.</div><div class="controls"><button id="playA" class="primary">▶ A</button><button id="playB" class="primary">▶ B</button><button id="alternate" class="gold">A ⇄ B</button></div></section>
-<section class="panel"><div class="sub" style="margin-bottom:5px">STRONGEST NONLOCAL RECURRENCES</div><div class="pairs" id="pairs"></div></section>
-<section class="panel"><div class="sub">CANDIDATE BOUNDARIES</div><div class="read" id="bounds">—</div></section>
-<div class="footer">The atlas describes the recording. It does not decide what any region means.</div>
-</div><script>
-(()=>{'use strict';const $=s=>document.querySelector(s),cl=(x,a,b)=>Math.max(a,Math.min(b,x));let A=null,ctx=null,buf=null,src=null,sel=0,pair=[0,0],altTimer=null,dur=0,gest=[],structure=null,M=null,n=0,mt=[];const fmt=t=>{t=Math.max(0,t||0);let m=Math.floor(t/60),s=Math.floor(t%60);return m+':'+String(s).padStart(2,'0')+'.'+String(Math.floor((t%1)*10));};function ac(){if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();if(ctx.state==='suspended')ctx.resume();return ctx}function stop(){if(src){try{src.stop()}catch(e){}src=null}if(altTimer){clearTimeout(altTimer);altTimer=null}}async function playAt(t,len=4.096){if(!buf)return;stop();const c=ac();src=c.createBufferSource();src.buffer=buf;src.connect(c.destination);src.start(0,cl(t,0,buf.duration-.01),Math.min(len,buf.duration-t));src.onended=()=>src=null}
-function norm(vals){let a=vals.filter(Number.isFinite);if(!a.length)return vals.map(()=>0);let mn=Math.min(...a),mx=Math.max(...a);return vals.map(v=>(v-mn)/(mx-mn||1))}function resize(c){let r=c.parentElement.getBoundingClientRect(),d=window.devicePixelRatio||1;c.width=Math.round(r.width*d);c.height=Math.round(r.height*d);let g=c.getContext('2d');g.setTransform(d,0,0,d,0,0);return[g,r.width,r.height]}
-function loadAtlas(a){A=a;dur=A.source.duration_s;gest=A.levels.gesture.windows;structure=A.structure;M=structure.cell_similarity.rows;n=structure.cell_similarity.size;mt=structure.cell_similarity.times_s;sel=0;pair=[0,0];$('#dur').textContent=fmt(dur);$('#status').textContent=(A.source.file_name||'atlas')+' · '+A.version;const pulse=$('#pulse');pulse.innerHTML='';(A.pulse.global_candidates||[]).forEach(p=>{let b=document.createElement('button');b.textContent=p.bpm.toFixed(3)+' BPM · '+p.score.toFixed(3);pulse.appendChild(b)});const pl=$('#pairs');pl.innerHTML='';(structure.top_recurrence_pairs||[]).slice(0,30).forEach((p,i)=>{let d=document.createElement('div');d.className='pair';let x=document.createElement('div');x.innerHTML='<strong>#'+String(i+1).padStart(2,'0')+' · '+p.similarity.toFixed(4)+'</strong><small>'+fmt(p.a_s)+' ↔ '+fmt(p.b_s)+'</small>';let b=document.createElement('button');b.textContent='A/B';b.onclick=()=>{pair=[p.a_s,p.b_s];updatePair(p.similarity);drawMatrix()};d.append(x,b);pl.appendChild(d)});$('#bounds').textContent=(structure.candidate_boundaries||[]).map(b=>fmt(b.t)+' ['+b.score.toFixed(2)+']').join(' · ');update();drawMatrix()}
-function drawTimeline(){if(!A)return;let[g,w,h]=resize($('#tc'));g.fillStyle='#030709';g.fillRect(0,0,w,h);let tracks=[norm(gest.map(r=>r.features.rms_db)),norm(gest.map(r=>r.features.onset_density)),norm(gest.map(r=>r.features.centroid_hz)),norm(gest.map(r=>Math.min(2,r.features.stereo_width))),norm(gest.map(r=>r.features.chroma_entropy))],cols=['#77e6eb','#7fca8c','#e6c96c','#a2a0ef','#e27882'],rh=h/tracks.length;tracks.forEach((v,k)=>{g.strokeStyle=cols[k];g.lineWidth=1.2;g.beginPath();v.forEach((x,i)=>{let t=(gest[i].t0+gest[i].t1)/2,xx=t/dur*w,yy=(k+1)*rh-5-x*(rh-10);i?g.lineTo(xx,yy):g.moveTo(xx,yy)});g.stroke();g.strokeStyle='#16272e';g.beginPath();g.moveTo(0,(k+1)*rh);g.lineTo(w,(k+1)*rh);g.stroke()});g.strokeStyle='#e6c96c88';(structure.candidate_boundaries||[]).forEach(b=>{let x=b.t/dur*w;g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()});g.strokeStyle='#fff';g.lineWidth=2;let x=sel/dur*w;g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}
-function nearest(t){let i=Math.round((t-.512)/.512);return gest[cl(i,0,gest.length-1)]}function update(){if(!A)return;let r=nearest(sel),f=r.features;$('#selTime').textContent=fmt(sel);$('#selRms').textContent=f.rms_db.toFixed(1)+' dB';$('#selCent').textContent=Math.round(f.centroid_hz)+' Hz';$('#read').innerHTML='<strong>'+fmt(r.t0)+'–'+fmt(r.t1)+'</strong> · onset '+f.onset_density.toFixed(3)+' · flatness '+f.flatness.toFixed(4)+' · width '+f.stereo_width.toFixed(2)+' · chroma entropy '+f.chroma_entropy.toFixed(3)+' · dominant PC '+f.dominant_pc+' ('+(f.dominant_pc_share*100).toFixed(1)+'%)';drawTimeline()}
-function drawMatrix(){if(!A)return;let[g,w,h]=resize($('#mc')),im=g.createImageData(Math.max(1,Math.floor(w)),Math.max(1,Math.floor(h))),W=im.width,H=im.height;for(let y=0;y<H;y++){let iy=Math.min(n-1,Math.floor(y/H*n));for(let x=0;x<W;x++){let ix=Math.min(n-1,Math.floor(x/W*n)),v=M[iy][ix]/255,q=(y*W+x)*4,c=Math.floor(v*235),b=Math.floor(12+v*80);im.data[q]=c;im.data[q+1]=Math.floor(c*.85);im.data[q+2]=b;im.data[q+3]=255}}g.putImageData(im,0,0);g.strokeStyle='#77e6eb';g.lineWidth=2;let ax=(pair[0]/dur)*w,by=(pair[1]/dur)*h;g.beginPath();g.moveTo(ax,0);g.lineTo(ax,h);g.moveTo(0,by);g.lineTo(w,by);g.stroke()}
-function updatePair(s){$('#pairRead').innerHTML='<strong>A '+fmt(pair[0])+' ↔ B '+fmt(pair[1])+'</strong>'+(s!=null?' · measured similarity '+s.toFixed(3):'')}
-$('#atlasFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{loadAtlas(JSON.parse(await f.text()))}catch(err){$('#status').innerHTML='<span class="warn">atlas parse failed: '+err.message+'</span>'}};$('#audioFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;$('#status').textContent='decoding '+f.name+'…';try{buf=await ac().decodeAudioData((await f.arrayBuffer()).slice(0));$('#status').textContent=(A?A.source.file_name+' · ':'')+f.name+' loaded locally'}catch(err){$('#status').innerHTML='<span class="warn">audio decode failed: '+err.message+'</span>'}};$('#timeline').onpointerdown=e=>{if(!A)return;let r=$('#timeline').getBoundingClientRect();sel=cl((e.clientX-r.left)/r.width,0,1)*dur;update()};$('#matrix').onpointerdown=e=>{if(!A)return;let r=$('#matrix').getBoundingClientRect(),ix=cl(Math.floor((e.clientX-r.left)/r.width*n),0,n-1),iy=cl(Math.floor((e.clientY-r.top)/r.height*n),0,n-1);pair=[mt[ix],mt[iy]];updatePair(M[iy][ix]/255);drawMatrix()};$('#play').onclick=()=>playAt(sel);$('#prev').onclick=()=>{if(!A)return;sel=cl(sel-4.096,0,dur);update()};$('#next').onclick=()=>{if(!A)return;sel=cl(sel+4.096,0,dur);update()};$('#playA').onclick=()=>playAt(pair[0]);$('#playB').onclick=()=>playAt(pair[1]);$('#alternate').onclick=()=>{if(!buf)return;stop();let flip=false;const go=()=>{playAt(flip?pair[1]:pair[0]);flip=!flip;altTimer=setTimeout(go,4300)};go()};window.onresize=()=>{drawTimeline();drawMatrix()};})();
-</script></body></html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#05080b">
+<title>Pirate Radio — Source Atlas Mixer</title>
+<link rel="stylesheet" href="source-atlas-v3.css">
+</head>
+<body>
+<div class="app">
+  <section class="panel top">
+    <div><h1>🏴‍☠️ PIRATE RADIO / SOURCE ATLAS</h1><div class="sub">one immutable source · multiscale live loops · recurrence throws</div></div>
+    <a href="signal-lab.html">LAB</a>
+  </section>
+
+  <section class="panel">
+    <div class="files">
+      <label>LOAD ATLAS JSON<input id="atlasFile" type="file" accept="application/json,.json"></label>
+      <label>LOAD LOCAL AUDIO<input id="audioFile" type="file" accept="audio/*,.m4a,.wav,.mp3,.ogg"></label>
+    </div>
+    <div class="sub" id="status">Load the source atlas and the matching local audio. Audio stays on this device.</div>
+    <div class="stats">
+      <div class="stat"><b>DURATION</b><span id="durationRead">—</span></div>
+      <div class="stat"><b>PULSE HYP.</b><span id="pulseRead">—</span></div>
+      <div class="stat"><b>POSITION</b><span id="positionRead">—</span></div>
+      <div class="stat"><b>LIVE LOOPS</b><span id="loopsRead">0/4</span></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="sub" style="margin-bottom:5px">WHOLE MOTHER TRACK · nested brackets = zoom ancestry · colored rails = live loops · arcs = recurrence exits</div>
+    <div class="canvasbox" id="overviewBox"><canvas id="overview"></canvas><div class="hint">tap anywhere → move focus without losing the whole song</div></div>
+  </section>
+
+  <section class="panel">
+    <div class="sub" style="margin-bottom:5px">MUSICAL ZOOM</div>
+    <div class="zoomchain" id="zoomChain"></div>
+    <div class="zoommeta"><span>LOOP SCALE <strong id="scaleRead">CELL 4.096 s</strong></span><span>VISIBLE <strong id="viewRead">32.000 s</strong></span></div>
+  </section>
+
+  <section class="panel">
+    <div class="sub" style="margin-bottom:5px">SOURCE UNDER YOUR FINGERS</div>
+    <div class="canvasbox" id="detailBox"><canvas id="detail"></canvas><div class="hint">drag = scrub · pinch = change musical scale</div></div>
+    <div class="maincontrols">
+      <button id="prevCell">◀ SCALE</button>
+      <button id="previewBtn" class="primary">▶ PREVIEW</button>
+      <button id="nextCell">SCALE ▶</button>
+    </div>
+    <div class="masterrow" style="margin-top:6px">
+      <button id="captureBtn" class="gold">SET+LIVE FOCUSED LOOP</button>
+      <button id="stopAllBtn" class="danger">STOP ALL</button>
+      <button onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})">MIX RACK ↓</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="sub" style="margin-bottom:5px">LIVE LOOP RACK · each voice keeps its own source scale and phase</div>
+    <div class="deckrack" id="deckRack"></div>
+  </section>
+
+  <section class="panel">
+    <div class="sub" style="margin-bottom:5px">RECURRENCE THROWS · focused loop switches on its next own boundary</div>
+    <div class="throws" id="throws"></div>
+  </section>
+
+  <section class="panel">
+    <div class="sub" style="margin-bottom:5px">MEASURED CONTEXT</div>
+    <div class="features">
+      <div class="feature"><b>RMS</b><span id="rms">—</span></div>
+      <div class="feature"><b>ONSETS/s</b><span id="onsets">—</span></div>
+      <div class="feature"><b>CENTROID</b><span id="centroid">—</span></div>
+      <div class="feature"><b>FLATNESS</b><span id="flatness">—</span></div>
+      <div class="feature"><b>STEREO WIDTH</b><span id="width">—</span></div>
+      <div class="feature"><b>CHROMA ENTROPY</b><span id="entropy">—</span></div>
+    </div>
+    <div class="read" id="where">Load an atlas to begin.</div>
+  </section>
+
+  <div class="footer">Focus gives precision. The overview preserves context. The loop rack preserves musical memory.</div>
+</div>
+<script src="source-atlas-v3.js"></script>
+</body>
+</html>
